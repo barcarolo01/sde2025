@@ -1,6 +1,5 @@
 from telegram import Update,InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
-
 import logging
 import os
 import urllib.parse
@@ -14,7 +13,8 @@ logging.basicConfig(
 )
 
 # Read config from environment; fallback to existing token if not set
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+#BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_TOKEN = "8538277966:AAG8qVFIv-7kztIIHh_yEMSNbVDIxkQl-jM"
 
 # Base URL for the web app handling Google OAuth (set this in env for production)
 WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "http://localhost:5000")
@@ -81,23 +81,22 @@ async def send_auth_link(chat_id: int, tg_id: int, context: ContextTypes.DEFAULT
     (for example `localhost` or non-HTTPS), the function will send the URL as plain text
     so Telegram doesn't reject the message creation.
     """
-    #auth_link = f"{WEBAPP_BASE}/login?tg_id={urllib.parse.quote_plus(str(tg_id))}"
-    auth_link = "https://www.ansa.it"
+    auth_link = f"{WEBAPP_BASE}/login?tg_id={urllib.parse.quote_plus(str(tg_id))}"
+    #auth_link = "https://www.ansa.it"
 
     # Simple validation: avoid creating inline URL buttons for localhost/127.0.0.1 or non-HTTPS
     parsed = urllib.parse.urlparse(auth_link)
     hostname = parsed.hostname or ""
-    #url_allowed = parsed.scheme == "https" and hostname not in ("localhost", "127.0.0.1")
+    url_allowed = parsed.scheme == "https" and hostname not in ("localhost", "127.0.0.1")
 
-    #if url_allowed:
-    keyboard = [[InlineKeyboardButton("🔗 Sign in with Google", url=auth_link)]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text="Please click the button below to sign in with Google and link your account:",
-        reply_markup=reply_markup,
-    )
-    '''
+    if url_allowed:
+        keyboard = [[InlineKeyboardButton("🔗 Sign in with Google", url=auth_link)]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Please click the button below to sign in with Google and link your account:",
+            reply_markup=reply_markup,
+        )
     else:
         # Fall back to sending the raw link as text (works for local testing / ngrok users)
         await context.bot.send_message(
@@ -107,7 +106,7 @@ async def send_auth_link(chat_id: int, tg_id: int, context: ContextTypes.DEFAULT
                 + auth_link
             ),
         )
-    '''
+    
 
 
 async def callback_handler(update, context: ContextTypes.DEFAULT_TYPE) -> None:

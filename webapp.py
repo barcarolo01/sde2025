@@ -4,6 +4,7 @@ import requests
 from flask import Flask, request, redirect, render_template_string
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
+from auth_db import link_user, init_db
 
 # load .env if present for local development
 try:
@@ -12,8 +13,6 @@ try:
 except Exception:
     # python-dotenv is optional; environment variables may be set elsewhere
     pass
-
-from auth_db import link_user, init_db
 
 app = Flask(__name__)
 
@@ -113,4 +112,4 @@ def oauth2callback():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
