@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from telegram import Update,InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
 import logging
@@ -5,7 +6,9 @@ import os
 import urllib.parse
 
 # Local auth DB helper
-from auth_db import get_user, init_db
+from auth_db import delete_user, get_user, init_db, link_user
+
+load_dotenv()  # Loads variables from .env into environment
 
 # Logging
 logging.basicConfig(
@@ -13,25 +16,13 @@ logging.basicConfig(
 )
 
 # Read config from environment; fallback to existing token if not set
-#BOT_TOKEN = os.environ.get("BOT_TOKEN")
-BOT_TOKEN = "8538277966:AAG8qVFIv-7kztIIHh_yEMSNbVDIxkQl-jM"
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "https://sde2025.onrender.com")
 
-# Base URL for the web app handling Google OAuth (set this in env for production)
-WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "https://sde2025.onrender.com/")
-AUTH_KEYBOARD = ReplyKeyboardMarkup(
-    [
-        [KeyboardButton("🔑 AUTHENTICATE / SIGN IN")], 
-    ], 
-    resize_keyboard=True, # Makes the keyboard compact
-    one_time_keyboard=False # Keeps the keyboard visible
-)
-
-
-# Asynchronous function: only allowed if user authenticated
-async def hello(update, context) -> None:
+async def hello_function(update, context) -> None:
     tg_id = update.message.from_user.id
     user = get_user(tg_id)
-    if not user:
+    if not user: # If the user is not authenticated
         auth_link = f"{WEBAPP_BASE}/login?tg_id={urllib.parse.quote_plus(str(tg_id))}"
         await update.message.reply_text(
             "You are not authenticated. Please authenticate with Google:\n"
@@ -42,18 +33,31 @@ async def hello(update, context) -> None:
     await update.message.reply_text(f"Hello, {user.get('name') or update.message.from_user.first_name} ({user.get('email')})")
 
 async def start_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    
-    
-    # Send an inline "LOGIN WITH GOOGLE" button that triggers a callback
-    keyboard = [
-        [InlineKeyboardButton("LOGIN WITH GOOGLE", callback_data="auth")]
-    ]
-    keyboard_markup = InlineKeyboardMarkup(keyboard)
+    tg_id = update.message.from_user.id
+    user = get_user(tg_id)
+    if not user: # If the user is not authenticated
+        # Send an inline "Login with Google" button that triggers a callback
+        keyboard = [
+            [InlineKeyboardButton("Login with Google", callback_data="auth")]
+        ]
+        keyboard_markup = InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(
-        "Welcome! To get started and link your Google account, press the button below:",
-        reply_markup=keyboard_markup
-    )
+        await update.message.reply_text(
+            "Welcome! It seems you are not authenticated. To get started, access with your Google account by pressing the button below:",
+            reply_markup=keyboard_markup
+        )
+    else:
+        keyboard = [
+            [InlineKeyboardButton("Function1", callback_data="auth")],
+            [InlineKeyboardButton("Function2", callback_data="auth")],
+            [InlineKeyboardButton("Function3", callback_data="auth")]
+        ]
+        keyboard_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            f"Welcome {user.get('name')}. Please select one of the following options:",
+            reply_markup=keyboard_markup
+        )
 
 
 async def auth_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -70,7 +74,7 @@ async def auth_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if tg_id is None or chat_id is None:
         return
-
+    
     await send_auth_link(chat_id, tg_id, context)
 
 
@@ -82,7 +86,6 @@ async def send_auth_link(chat_id: int, tg_id: int, context: ContextTypes.DEFAULT
     so Telegram doesn't reject the message creation.
     """
     auth_link = f"{WEBAPP_BASE}/login?tg_id={urllib.parse.quote_plus(str(tg_id))}"
-    #auth_link = "https://www.ansa.it"
 
     # Simple validation: avoid creating inline URL buttons for localhost/127.0.0.1 or non-HTTPS
     parsed = urllib.parse.urlparse(auth_link)
@@ -123,13 +126,21 @@ async def callback_handler(update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await send_auth_link(chat_id, tg_id, context)
 
 
+
+async def logout_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    tg_id = update.message.from_user.id
+    delete_user(tg_id)
+    await update.message.reply_text("Logout performed successfully!")
+
+
 def main() -> None:
     # Ensure DB exists
     init_db()
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start_function))
-    app.add_handler(CommandHandler("ciao", hello))
+    app.add_handler(CommandHandler("ciao", hello_function))
     app.add_handler(CommandHandler("auth", auth_function))
+    app.add_handler(CommandHandler("logout", logout_function))
     app.add_handler(CallbackQueryHandler(callback=callback_handler))
     app.run_polling()
 

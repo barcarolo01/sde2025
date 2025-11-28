@@ -4,7 +4,6 @@ import requests
 from flask import Flask, request, redirect, render_template_string
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
-from auth_db import link_user, init_db
 
 # load .env if present for local development
 try:
@@ -22,14 +21,12 @@ CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "https://sde2025.onrender.com")
 REDIRECT_URI = os.environ.get("REDIRECT_URI", f"{WEBAPP_BASE}/oauth2callback")
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_AUTH_ENDPOINT = os.environ.get("BOT_AUTH_ENDPOINT", "http://localhost:5000/auth/callback")
 
 if not CLIENT_ID or not CLIENT_SECRET:
     print("Warning: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET should be set in environment or in a .env file.")
     print("If you created a .env file, ensure it's named '.env' (not '.evn') and placed in the project root.")
     print("You can also set them in PowerShell: $env:GOOGLE_CLIENT_ID='<id>'; $env:GOOGLE_CLIENT_SECRET='<secret>'")
-
-# ensure DB initialized
-init_db()
 
 
 @app.route("/login")
@@ -85,7 +82,7 @@ def oauth2callback():
     except Exception as e:
         return f"Failed to verify id token: {e}", 500
 
-    # Link user in DB using state as tg_id
+    # Parse state as tg_id
     try:
         tg_id = int(state)
     except Exception:
@@ -94,20 +91,27 @@ def oauth2callback():
     sub = idinfo.get("sub")
     email = idinfo.get("email")
     name = idinfo.get("name")
-    link_user(tg_id, sub, email, name)
 
-    # Optionally notify Telegram user (if BOT_TOKEN provided)
-    if BOT_TOKEN:
-        send_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        text = f"✅ Google account {email} linked to your Telegram account."
-        try:
-            requests.post(send_url, data={"chat_id": tg_id, "text": text})
-        except Exception:
-            pass
+    # Send authentication data to the Telegram bot's local database
+    try:
+        auth_response = requests.post(
+            BOT_AUTH_ENDPOINT,
+            json={
+                "tg_id": tg_id,
+                "google_sub": sub,
+                "email": email,
+                "name": name
+            },
+            timeout=5
+        )
+        if auth_response.status_code != 200:
+            print(f"Warning: Bot auth endpoint returned {auth_response.status_code}: {auth_response.text}")
+    except Exception as e:
+        print(f"Warning: Failed to notify bot of authentication: {e}")
 
     return render_template_string("""
     <h2>Authentication complete</h2>
-    <p>You can now return to Telegram. If the bot doesn't respond immediately, try /ciao.</p>
+    <p>You can now return to Telegram. If the bot doesn't respond immediately, try /start again.</p>
     """)
 
 

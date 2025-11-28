@@ -42,3 +42,16 @@ WEBAPP_BASE=http://localhost:5000
 ```
 
 Then run: `python webapp.py`
+
+### Local Database and Persistence
+
+- **Default:** The app uses a local SQLite file `auth.db` located next to `auth_db.py` by default.
+- **Custom path:** To change the DB location (for example to a persistent volume), set the environment variable `AUTH_DB_PATH` to the full path of the DB file before starting the app.
+- **Render note:** Render's filesystem is ephemeral across deploys; for long-term persistence either mount a persistent disk (if your plan supports it) or use an external DB service. If you keep the local SQLite file on Render, data may be lost on redeploys.
+- **Backups:** You can copy the DB file to a safe location for backups, e.g.:
+
+```powershell
+cp .\auth.db C:\path\to\backup\auth-$(Get-Date -Format yyyyMMdd-HHmmss).db
+```
+
+Or use the `AUTH_DB_PATH` env var to place the file on a mounted persistent volume.
