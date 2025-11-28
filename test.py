@@ -17,7 +17,7 @@ logging.basicConfig(
 BOT_TOKEN = "8538277966:AAG8qVFIv-7kztIIHh_yEMSNbVDIxkQl-jM"
 
 # Base URL for the web app handling Google OAuth (set this in env for production)
-WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "http://localhost:5000")
+WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "https://sde2025.onrender.com/")
 AUTH_KEYBOARD = ReplyKeyboardMarkup(
     [
         [KeyboardButton("🔑 AUTHENTICATE / SIGN IN")], 

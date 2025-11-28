@@ -19,7 +19,7 @@ app = Flask(__name__)
 # Configuration from environment
 CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "http://localhost:5000")
+WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "https://sde2025.onrender.com/")
 REDIRECT_URI = os.environ.get("REDIRECT_URI", f"{WEBAPP_BASE}/oauth2callback")
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
