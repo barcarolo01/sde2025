@@ -15,8 +15,6 @@ logging.basicConfig(
 
 # Read config from environment; fallback to existing token if not set
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-if not BOT_TOKEN:
-    BOT_TOKEN = "8538277966:AAG8qVFIv-7kztIIHh_yEMSNbVDIxkQl-jM"
 
 # Base URL for the web app handling Google OAuth (set this in env for production)
 WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "http://localhost:5000")
