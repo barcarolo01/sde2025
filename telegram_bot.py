@@ -4,7 +4,6 @@ from telegram.ext import Application, CommandHandler, ContextTypes,CommandHandle
 import logging
 import os
 import sys
-import urllib.parse
 import Payments.payment_functions as payment_functions
 from Database.auth_db import init_db, insert_user, get_user
 
@@ -28,7 +27,6 @@ async def start_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # Send an inline "Login with Google" button that triggers a callback
         keyboard = [
             [InlineKeyboardButton("Register Now!", callback_data="auth")],
-            [InlineKeyboardButton("Buy", callback_data="pay")]
         ]
         keyboard_markup = InlineKeyboardMarkup(keyboard)
 
@@ -38,9 +36,9 @@ async def start_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
     else:
         keyboard = [
-            [InlineKeyboardButton("Function1", callback_data="auth")],
-            [InlineKeyboardButton("Function2", callback_data="auth")],
-            [InlineKeyboardButton("Function3", callback_data="auth")]
+            [InlineKeyboardButton("Buy a lesson", callback_data="pay")],
+            [InlineKeyboardButton("Function2", callback_data="f1")],
+            [InlineKeyboardButton("Function3", callback_data="f2")]
         ]
         keyboard_markup = InlineKeyboardMarkup(keyboard)
         
@@ -50,6 +48,20 @@ async def start_function(update, context: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup=keyboard_markup
         )
 
+async def pay_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "pay":
+        # IMPORTANT: pay_function expects an Update containing a .message
+        # but button presses come as a callback_query.
+        # So we call it manually using the callback's message.
+        fake_update = Update(
+            update.update_id,
+            message=query.message
+        )
+        return await pay_function(fake_update, context)
+
 
 # ==================== Registration and authentication ====================
 NAME, SURNAME = range(2)
@@ -58,12 +70,14 @@ async def auth_function(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Please enter your **name**:")
     return NAME
 
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def auth_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()  # Acknowledge the callback
     if query.data == 'auth':
         await query.message.reply_text("Please enter your *name*:")
         return NAME
+    
+
 
 # Capture name
 async def capture_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -111,13 +125,14 @@ def main() -> None:
     # Ensure DB exists
     init_db()
     app = Application.builder().token(BOT_TOKEN).build()
+
     app.add_handler(CommandHandler("start", start_function))
 
     # Handler for authentication services
     app.add_handler(CommandHandler("auth", auth_function))
 
     conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler(button_callback, pattern='^auth$')],
+        entry_points=[CallbackQueryHandler(auth_button_callback, pattern='^auth$')],
         states={
             NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, capture_name)],
             SURNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, capture_surname)]
@@ -128,7 +143,7 @@ def main() -> None:
 
     # Handler for payment services
     app.add_handler(CommandHandler("pay", pay_function))
-
+    app.add_handler(CallbackQueryHandler(pay_button_callback, pattern="^pay$"))
 
     # Polling (Waiting for requests)
     app.run_polling()
