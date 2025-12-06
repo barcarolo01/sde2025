@@ -1,12 +1,12 @@
-import psycopg2
-import os
-from dotenv import load_dotenv
-import bcrypt # Importiamo la libreria bcrypt
+import psycopg2 # PostgreSQL adapter for Python
+import os # For accessing environment variables
+from dotenv import load_dotenv # To load environment variables from .env file
+import bcrypt # Imports the bcrypt library for hashing
 
-# Carica le variabili dal file .env
+# Load variables from .env file
 load_dotenv() 
 
-# Funzione per stabilire la connessione al DB (riutilizzata da setup_database)
+# Function to establish the DB connection (reused from setup_database)
 def connect_db():
     """Establishes a connection to the PostgreSQL database."""
     try:
@@ -47,36 +47,37 @@ def seed_database():
     try:
         print("--- Starting Database Seeding with REAL HASHING ---")
         
-        # 1. Popolazione della Tabella USERS
+        # 1. Populating the USERS Table
         
-        # Le password in chiaro di test
+        # Clear test passwords
         admin_password_clear = "SecureAdmin456!"
         chica_password_clear = "SecureChica789!"
-        chico_password_clear = "SecureChico012!"
+        chico_password_clear = "SecureChico123!"
         
-        # Genera gli hash reali
+        # Generate real hashes
         admin_hash = hash_password(admin_password_clear)
         chica_hash = hash_password(chica_password_clear)
         chico_hash = hash_password(chico_password_clear)
         
         users_data = [
-            (1000000001, 'admin_test', admin_hash, 'admin'),
-            (1000000002, 'chica_test', chica_hash, 'follower'),
-            (1000000003, 'chico_test', chico_hash, 'leader'),
+            (1000000001, 'admin', 'test', '2000-01-01', 'admin_test', admin_hash, 'admin'),
+            (1000000002, 'chica', 'loca', '2003-01-01', 'chica_test', chica_hash, 'follower'),
+            (1000000003, 'chico', 'loco', '1999-01-01', 'chico_test', chico_hash, 'leader'),
         ]
         
         # Insert Users Query
         insert_users_query = """
-            INSERT INTO users (user_id, username, password_hash, role) 
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO users (user_id, name, surname, birthdate, username, password_hash, role) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (user_id) DO NOTHING;
         """
+        # Execute the query for multiple users
         cur.executemany(insert_users_query, users_data)
         print(f"Inserted {cur.rowcount} new users with real hashes.")
         
-        # (Il resto dello script per events e reservations rimane invariato, ma lo includiamo per completezza)
+        # (The rest of the script for events and reservations remains the same, but included for completeness)
 
-        # 2. Popolazione della Tabella EVENTS
+        # 2. Populating the EVENTS Table
         events_data = [
             ('serata', 'Bot Launch Party', '2025-12-15 20:00:00', '2025-12-15 23:00:00','Test Location', 20.00, 50),
             ('porta_party', 'Christmas Party', '2026-01-10 22:00:00', '2026-01-11 02:00:00','VIP Venue', 10.00, 30),
@@ -90,8 +91,8 @@ def seed_database():
         cur.executemany(insert_events_query, events_data)
         print(f"Inserted {cur.rowcount} new events.")
 
-        # 3. Popolazione della Tabella RESERVATIONS
-        # Recupera l'ID dell'evento di test (ad esempio, il primo evento inserito)
+        # 3. Populating the RESERVATIONS Table
+        # Retrieve the ID of the test event (e.g., the first inserted event)
         cur.execute("SELECT event_id FROM events WHERE title = %s;", ('Bot Launch Party',))
         event_id_test = cur.fetchone()[0]
         reservations_data = (
@@ -109,18 +110,18 @@ def seed_database():
         cur.execute(insert_reservations_query, reservations_data)
         print(f"Inserted {cur.rowcount} new reservations.")
 
-        conn.commit()
+        conn.commit() # Final commit for all inserts
         print("--- Seeding completed successfully. ---")
 
     except Exception as e:
         print(f"Error during DB seeding: {e}")
-        conn.rollback()
+        conn.rollback() # Rollback on error
         
     finally:
         if cur:
-            cur.close()
+            cur.close() # Close cursor
         if conn:
-            conn.close()
+            conn.close() # Close connection
 
 if __name__ == "__main__":
     seed_database()

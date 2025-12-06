@@ -1,11 +1,12 @@
-import psycopg2
-import os
-from dotenv import load_dotenv
+import psycopg2 # PostgreSQL adapter for Python
+import os # For accessing environment variables
+from dotenv import load_dotenv # To load environment variables from .env file
 
+# Load environment variables from .env file
 load_dotenv()
 
 def connect_db():
-    """Stabilisce la connessione al database usando le variabili d'ambiente."""
+    """Establishes a connection to the database using environment variables."""
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
@@ -16,12 +17,12 @@ def connect_db():
         )
         return conn
     except psycopg2.Error as e:
-        print(f"Errore di connessione al DB: {e}")
-        # Gestione dell'errore (potresti voler terminare il programma qui)
+        print(f"DB connection error: {e}")
+        # Error handling (you might want to terminate the program here)
         return None
 
 def setup_database():
-    """Esegue lo script SQL per creare le tabelle."""
+    """Executes the SQL script to create the tables."""
     conn = connect_db()
     if conn is None:
         return
@@ -31,9 +32,12 @@ def setup_database():
         
         sql_commands = [
             """
-            -- Crea la tabella users (1)
+            -- Creates the users table (1)
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                surname VARCHAR(100) NOT NULL,
+                birthdate DATE NOT NULL CHECK (birthdate <= CURRENT_DATE),
                 username VARCHAR(255) NOT NULL UNIQUE,
                 password_hash VARCHAR(255) NOT NULL,
                 role VARCHAR(50) NOT NULL CHECK (role IN ('follower', 'leader', 'admin')),
@@ -42,7 +46,7 @@ def setup_database():
             );
             """,
             """
-            -- Crea la tabella events (2)
+            -- Creates the events table (2)
             CREATE TABLE IF NOT EXISTS events (
                 event_id SERIAL PRIMARY KEY,
                 event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('serata', 'porta_party', 'workshop')),
@@ -57,7 +61,7 @@ def setup_database():
             );
             """,
             """
-            -- Crea la tabella reservations (3)
+            -- Creates the reservations table (3)
             CREATE TABLE IF NOT EXISTS reservations (
                 reservation_id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users (user_id) ON DELETE CASCADE,
@@ -68,29 +72,30 @@ def setup_database():
                 check_in_time TIMESTAMP WITH TIME ZONE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
-            -- Indice di unicità per prevenire doppie prenotazioni
+            -- Unique index to prevent double bookings
             CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_reservation ON reservations (user_id, event_id);
             """
         ]
         
+        # Execute each SQL command
         for command in sql_commands:
             cur.execute(command)
         
-        conn.commit()
-        print("Tabelle del database create o verificate con successo.")
+        conn.commit() # Commit changes to the database
+        print("Database tables created or verified successfully.")
         
     except psycopg2.ProgrammingError as e:
-        # Questo può accadere se le tabelle esistono già e stai provando a ricrearle senza IF NOT EXISTS
-        print(f"Errore SQL durante la creazione delle tabelle: {e}")
-        conn.rollback() # Annulla qualsiasi operazione pendente in caso di errore
+        # Handles errors like trying to recreate tables without IF NOT EXISTS
+        print(f"SQL error during table creation: {e}")
+        conn.rollback() # Rollback any pending operation on error
         
     except Exception as e:
-        print(f"Errore generico durante il setup del DB: {e}")
+        print(f"Generic error during DB setup: {e}")
         
     finally:
         if conn:
-            conn.close()
+            conn.close() # Close connection
 
-# Esegui la funzione di setup
+# Execute the setup function
 if __name__ == "__main__":
-    setup_database()    
+    setup_database()
