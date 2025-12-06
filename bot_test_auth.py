@@ -73,7 +73,7 @@ async def start_function(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if not session_ok:
             # Session expired
             session_expired = True
-            await update.message.reply_text("Your session has expired due to inactivity. Please login again.")
+            await update.message.reply_text("Your session has expired. Please login again.")
         else:
             # Session OK, user is authenticated
             user_info = initial_user_info
