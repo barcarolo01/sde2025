@@ -79,14 +79,14 @@ def seed_database():
 
         # 2. Populating the EVENTS Table
         events_data = [
-            ('serata', 'Bot Launch Party', '2025-12-15 20:00:00', '2025-12-15 23:00:00','Test Location', 20.00, 50),
-            ('porta_party', 'Christmas Party', '2025-11-29 18:00:00', '2025-11-29 23:00:00','VIP Venue', 10.00, 30),
-            ('workshop', 'Lady Style Workshop', '2025-11-15 14:00:00', '2025-11-15 16:00:00','FitUp', 25.00, 20),
+            ('serata', 'Bot Launch Party', '2025-12-15 20:00:00', '2025-12-15 23:00:00','Test Location', 20.00, 50, "Launch party for the new Telegram Bot!", "no"),
+            ('porta_party', 'Christmas Party', '2025-11-29 18:00:00', '2025-11-29 23:00:00','Salta Polivalente C. Demattè - Ravina', 15.00, 200, 'Festive Christmas-themed party: everyone brings something to drink and/or eat!', 'https://github.com/barcarolo01/sde2025/blob/main/posters/efaf68a0-bb13-4a0c-8507-e9f922a43c33.jpg'),
+            ('workshop', 'Lady Style Workshop', '2025-11-15 14:00:00', '2025-11-15 16:00:00','FitUp - Trento', 25.00, 20, 'Workshop on Lady Style dance techniques with Ipek.', 'https://github.com/barcarolo01/sde2025/blob/main/posters/c3c0dbad-2908-4c4f-9c6d-7c636a924b35.jpg'),
         ]
         
         insert_events_query = """
-            INSERT INTO events (event_type, title, start_date_time, end_date_time, location, cost, capacity) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING event_id;
+            INSERT INTO events (event_type, title, start_date_time, end_date_time, location, cost, capacity, description, poster_image_url) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING event_id;
         """
         cur.executemany(insert_events_query, events_data)
         print(f"Inserted {cur.rowcount} new events.")
