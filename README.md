@@ -19,3 +19,5 @@ DB_NAME="name_db_telegram_bot"
 DB_USER="your_user_db"
 DB_PASSWORD="your_password_db"
 
+Per autenticazione: far partire login_registration_service.py in un terminale e telegram_bot2.py
+

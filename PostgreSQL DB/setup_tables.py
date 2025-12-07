@@ -56,6 +56,8 @@ def setup_database():
                 location VARCHAR(255),
                 capacity INTEGER NOT NULL CHECK (capacity >= 0),
                 cost DECIMAL(10,2) DEFAULT 0.00 CHECK (cost >= 0.00),
+                description TEXT,
+                poster_image_url VARCHAR(255),
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
