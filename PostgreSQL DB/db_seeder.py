@@ -80,8 +80,8 @@ def seed_database():
         # 2. Populating the EVENTS Table
         events_data = [
             ('serata', 'Bot Launch Party', '2025-12-15 20:00:00', '2025-12-15 23:00:00','Test Location', 20.00, 50),
-            ('porta_party', 'Christmas Party', '2026-01-10 22:00:00', '2026-01-11 02:00:00','VIP Venue', 10.00, 30),
-            ('workshop', 'Lady Style Workshop', '2026-02-05 10:00:00', '2026-02-05 16:00:00','Tech Hub', 25.00, 20),
+            ('porta_party', 'Christmas Party', '2025-11-29 18:00:00', '2025-11-29 23:00:00','VIP Venue', 10.00, 30),
+            ('workshop', 'Lady Style Workshop', '2025-11-15 14:00:00', '2025-11-15 16:00:00','FitUp', 25.00, 20),
         ]
         
         insert_events_query = """
