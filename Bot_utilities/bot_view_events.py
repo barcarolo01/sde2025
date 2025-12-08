@@ -6,7 +6,6 @@ import httpx
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import ContextTypes, CallbackQueryHandler
 import psycopg2
-from PostgreSQL_DB.db_utilities import connect_db
 from Bot_utilities.bot_auth import *
 
 sys.dont_write_bytecode = True  # Prevent .pyc files generation
@@ -16,6 +15,7 @@ PAGE_SIZE = 3 # Number of events to fetch at every request
 from datetime import datetime
 
 def format_event(e):
+    event_id = e["event_id"]
     event_type = e["event_type"]
     title = e["title"]
     start_dt = datetime.fromisoformat(e["start_date_time"])
@@ -57,7 +57,7 @@ async def view(update: Update, context: ContextTypes.DEFAULT_TYPE, offset=0):
         load_dotenv()  # Loads variables from .env into environment
         CALENDAR_SERVICE_URL = os.environ.get("CALENDAR_SERVICE_URL")
         params = {"offset": offset}
-        response = await client.get(f"{CALENDAR_SERVICE_URL}/events/view",params=params)
+        response = await client.get(f"{CALENDAR_SERVICE_URL}/events",params=params)
         if response.status_code == 200:
             events_json = response.json()  
             # If there are no more events
@@ -68,7 +68,17 @@ async def view(update: Update, context: ContextTypes.DEFAULT_TYPE, offset=0):
             # Send each event as a separate message
             for event in events_json:
                 formatted_text = format_event(event)
-                await context.bot.send_message(chat_id, formatted_text, parse_mode="Markdown")
+                button = InlineKeyboardButton(
+                    text="See more",
+                    callback_data=f"see_more:{event['event_id']}"
+                )
+                keyboard = InlineKeyboardMarkup([[button]])
+
+                await update.message.reply_text(
+                    formatted_text,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard
+    )
             
             # Send navigation buttons ('View More' and 'Back')
             keyboard = events_keyboard(offset, PAGE_SIZE, len(events_json))
@@ -76,4 +86,41 @@ async def view(update: Update, context: ContextTypes.DEFAULT_TYPE, offset=0):
 
         else:
             message = f"Failed to fetch events. Please try later (HTTP code: {response.status_code})"
+            await context.bot.send_message(chat_id, message, parse_mode="Markdown")
+
+
+async def see_more_callback(update, context):
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        offset = int(query.data.split(":")[1]) if ":" in query.data else offset
+        chat_id = query.message.chat_id
+    else:
+        chat_id = update.message.chat_id
+
+    query = update.callback_query
+    await query.answer()
+
+    # Extract event title
+    data = query.data  # e.g., "see_more:Event 1"
+    _, event_id = data.split(":", 1)
+
+    async with httpx.AsyncClient() as client:
+        load_dotenv()  # Loads variables from .env into environment
+        CALENDAR_SERVICE_URL = os.environ.get("CALENDAR_SERVICE_URL")
+        response = await client.get(f"{CALENDAR_SERVICE_URL}/events/{event_id}")
+
+        if response.status_code == 200:
+            events_json = response.json()  
+            # There should be only one event in the response
+            for event in events_json:
+                formatted_text = format_event(event)
+                formatted_text += event['description']
+                await context.bot.send_message(chat_id, formatted_text, parse_mode="Markdown")
+
+        elif response.status_code == 404:
+            await context.bot.send_message(chat_id, "Impossible to find the requested event.")
+
+        else:
+            message = f"Failed to fetch the event. Please try later (HTTP code: {response.status_code})"
             await context.bot.send_message(chat_id, message, parse_mode="Markdown")

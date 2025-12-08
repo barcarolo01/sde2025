@@ -52,6 +52,9 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(view, pattern=r"^view:\d+$"))
     app.add_handler(CallbackQueryHandler(lambda u, c: u.callback_query.message.delete(), pattern="back"))
 
+    app.add_handler(CallbackQueryHandler(see_more_callback, pattern="^see_more:"))
+
+
     # Polling (Waiting for requests)
     app.run_polling()
 

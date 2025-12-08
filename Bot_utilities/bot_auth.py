@@ -1,7 +1,6 @@
 import sys
 from telegram import Update
 from telegram.ext import ContextTypes,ContextTypes
-from PostgreSQL_DB.db_utilities import connect_db
 sys.dont_write_bytecode = True  # Prevent .pyc files generation
 
 async def IsUserAuthorized(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
