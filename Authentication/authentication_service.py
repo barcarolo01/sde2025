@@ -14,14 +14,17 @@ except Exception:
     pass
 
 app = Flask(__name__)
+authenticated_users = {}   # { tg_id: {google_sub, email, name} }
+
 
 # Configuration from environment
 CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-WEBAPP_BASE = os.environ.get("WEBAPP_BASE", "https://sde2025.onrender.com")
+WEBAPP_BASE = os.environ.get("LOGIN_BASE_URL")
 REDIRECT_URI = os.environ.get("REDIRECT_URI", f"{WEBAPP_BASE}/oauth2callback")
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-BOT_AUTH_ENDPOINT = os.environ.get("BOT_AUTH_ENDPOINT", "http://localhost:5000/auth/callback")
+
+BOT_API = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 if not CLIENT_ID or not CLIENT_SECRET:
     print("Warning: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET should be set in environment or in a .env file.")
@@ -31,6 +34,10 @@ if not CLIENT_ID or not CLIENT_SECRET:
 @app.route("/")
 def index():
     return "Google OAuth2 Authentication Webapp is running."
+
+@app.route("/hello")
+def hello():
+    return "<h1>CIAO<h1>"
 
 @app.route("/login")
 def login():
@@ -50,7 +57,6 @@ def login():
     }
     url = auth_endpoint + "?" + urllib.parse.urlencode(params)
     return redirect(url)
-
 
 @app.route("/oauth2callback")
 def oauth2callback():
@@ -95,27 +101,27 @@ def oauth2callback():
     email = idinfo.get("email")
     name = idinfo.get("name")
 
-    # Send authentication data to the Telegram bot's local database
-    try:
-        auth_response = requests.post(
-            BOT_AUTH_ENDPOINT,
-            json={
-                "tg_id": tg_id,
-                "google_sub": sub,
-                "email": email,
-                "name": name
-            },
-            timeout=5
-        )
-        if auth_response.status_code != 200:
-            print(f"Warning: Bot auth endpoint returned {auth_response.status_code}: {auth_response.text}")
-    except Exception as e:
-        print(f"Warning: Failed to notify bot of authentication: {e}")
+    # Store authenticated session
+    authenticated_users[tg_id] = {
+        "google_sub": sub,
+        "email": email,
+        "name": name,
+        "tokens": token_json,  # optional: store access_token, refresh_token, expires_in
+    }
 
-    return render_template_string("""
-    <h2>Authentication complete</h2>
-    <p>You can now return to Telegram. If the bot doesn't respond immediately, try /start again.</p>
-    """)
+    # Notify Telegram bot
+    message = f"Login successful!\nYou are authenticated as: {email}"
+    requests.post(BOT_API, json={"chat_id": tg_id, "text": message})
+
+    # Return a simple HTML page to the user
+    return f"""
+        <html>
+        <body>
+            <h2>Login successful</h2>
+            <p>You can now return to Telegram.</p>
+        </body>
+        </html>
+    """
 
 
 if __name__ == "__main__":

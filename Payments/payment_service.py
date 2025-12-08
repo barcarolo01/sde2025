@@ -98,9 +98,11 @@ def paypal_webhook():
         datetime_paid = capture["create_time"]
         print(f"[!] Payment received: {payer_name}, {amount} {currency}, at {datetime_paid}")
         # Insert into your DB here
+        
 
     return "", 200  # Must return 200 to acknowledge PayPal
 
 if __name__ == '__main__':
     load_dotenv()  # Loads variables from .env into environment
-    app.run(host='0.0.0.0', port=6000, debug=True)
+    app.run(host='0.0.0.0', port=10100, debug=True)
+    print()
