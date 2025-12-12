@@ -76,7 +76,18 @@ def setup_database():
             );
             -- Unique index to prevent double bookings
             CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_reservation ON reservations (user_id, event_id);
+            """,
             """
+            -- Creates the sessions table (4) - MODIFICATA PER TIMEOUT FISSO
+            CREATE TABLE IF NOT EXISTS sessions (
+                token VARCHAR(255) PRIMARY KEY,       -- Il token univoco di sessione
+                user_id INTEGER NOT NULL REFERENCES users (user_id) ON DELETE CASCADE, -- Correzione del tipo: deve essere INTEGER
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP WITH TIME ZONE NOT NULL -- NUOVO: Definisce il momento di scadenza del token
+            );
+            -- Aggiungi un indice per velocizzare la ricerca per user_id
+            CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+            """           
         ]
         
         # Execute each SQL command

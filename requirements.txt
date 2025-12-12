@@ -7,3 +7,4 @@ python-dotenv>=1.0
 psycopg2-binary==2.9.11
 bcrypt==5.0.0
 python-telegram-bot-calendar==1.0.5
+npm==0.1.1
